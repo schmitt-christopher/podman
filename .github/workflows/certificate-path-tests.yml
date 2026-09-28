@@ -1,0 +1,42 @@
+name: Certificate path tests
+
+on:
+  push:
+    branches:
+      - test/certificate-import
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  certificates:
+    name: Certificate regression tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Test certificate import paths
+        env:
+          CGO_ENABLED: "0"
+        run: go test -mod=vendor -tags 'remote containers_image_openpgp' ./pkg/machine/certificates -count=1 -v
+
+  validate:
+    name: Full repository validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Provide the main reference used by validation
+        run: git branch main origin/main
+      - name: Build and validate in the official container
+        run: script -q -e -c 'make validatepr PODMANCMD=docker' /dev/null
