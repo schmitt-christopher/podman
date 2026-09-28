@@ -39,4 +39,16 @@ jobs:
       - name: Provide the main reference used by validation
         run: git branch main origin/main
       - name: Build and validate in the official container
-        run: script -q -e -c 'make validatepr PODMANCMD=docker' /dev/null
+        run: |
+          docker run --rm --init --tmpfs /tmp \
+            --volume "$PWD:/go/src/github.com/containers/podman" \
+            --volume validatepr-gocache:/root/.cache/go-build \
+            --volume validatepr-gomodcache:/root/go/pkg/mod \
+            --volume validatepr-lintcache:/root/.cache/golangci-lint \
+            --volume validatepr-precommitcache:/root/.cache/pre-commit \
+            --security-opt label=disable --network=host \
+            --workdir /go/src/github.com/containers/podman \
+            --env GIT_CONFIG_COUNT=1 \
+            --env GIT_CONFIG_KEY_0=safe.directory \
+            --env GIT_CONFIG_VALUE_0=/go/src/github.com/containers/podman \
+            quay.io/libpod/validatepr:latest make .validatepr
