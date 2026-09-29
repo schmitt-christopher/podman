@@ -17,6 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ac1d5b9524bb07eba7fdc844c027e3ae1102726b
           persist-credentials: false
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -34,10 +35,11 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ac1d5b9524bb07eba7fdc844c027e3ae1102726b
           fetch-depth: 0
           persist-credentials: false
       - name: Provide the main reference used by validation
-        run: git branch main origin/main
+        run: git branch main HEAD^
       - name: Build and validate in the official container
         run: |
           docker run --rm --init --tmpfs /tmp \
@@ -51,4 +53,7 @@ jobs:
             --env GIT_CONFIG_COUNT=1 \
             --env GIT_CONFIG_KEY_0=safe.directory \
             --env GIT_CONFIG_VALUE_0=/go/src/github.com/containers/podman \
-            quay.io/libpod/validatepr:latest make .validatepr
+            quay.io/libpod/validatepr:latest sh -ec '
+              dnf -y install "perl(Test::Differences)"
+              exec make .validatepr
+            '
